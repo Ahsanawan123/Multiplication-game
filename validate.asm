@@ -58,8 +58,7 @@
 	sw $t6, slider($s1)
 	
 	jal print
-	#j checkHorizontalWin
-	j validateWin
+	j checkHorizontalWin
 	
 
 	#adder for error 2
