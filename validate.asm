@@ -1,10 +1,7 @@
-.data
-	board:  .word 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 24, 25, 27, 28, 30, 32, 35, 36, 40, 42, 45, 48, 49, 54, 56, 63, 64, 72, 81
-	status: .word 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-	slider: .word 0, 0, 0, 0, 0, 0, 0, 0, 0
+.globl validateInput
 .text
 	#assuming user inputs are in $a0 and $a1
-	main:
+	validateInput:
 	#test to see if within 1 and 9. If failed, goes to error_1
 	bgt $a0, 9, error_1
 	bgt $a1, 9, error_1
@@ -16,15 +13,17 @@
 	la $t0, slider
 	subi $t1, $a0, 1 #we turn this value into the index of slider we need to compare a0 with (1-9 now 0-8)
 	sll $t1, $t1, 2 #t1 has 4 * index at which we need to compare with (word aligned)
+	move $s0, $t1
 	add $t2, $t1, $t0 #t2 contains address of corresponding location of slider
-	lw $t3, ($t2)
+	lw $t3, 0($t2)
 	beq $t3, 1, adder1
 	continue1:
 
 	subi $t1, $a1, 1
 	sll $t1, $t1, 2 #t1 has 4 * index at which we need to compare with
+	move $s1, $t1
 	add $t2, $t1, $t0 #t2 contains address of corresponding location of slider
-	lw $t3, ($t2)
+	lw $t3, 0($t2)
 	beq $t3, 1, adder2
 	continue2:
 	
@@ -36,7 +35,7 @@
 	li $t2, 0 #loop variable, will exit loop if this value exceeds 35 (touches 36)
 	
 	loop:
-		lw $t3, ($t1)
+		lw $t3, 0($t1)
 		beq $t0, $t3, process
 		addi $t1, $t1, 4
 		addi $t2, $t2, 1
@@ -44,9 +43,24 @@
 		
 	continue3:
 	
-	#call update board
+	# update board, slider, and check for win
+	li $t6, 1
+	sw $t6, status($t2)
 	
-	j update_board
+		# RESET SLIDER ARRAY TO ZERO
+	li $t1, -4						# loop to set each value in slider to zero
+	resetLoop:
+	addi $t1, $t1, 4
+	sw $zero, slider($t1)
+	bne $t1, 32, resetLoop
+	
+	sw $t6, slider($s0)
+	sw $t6, slider($s1)
+	
+	jal print
+	#j checkHorizontalWin
+	j validateWin
+	
 
 	#adder for error 2
 	adder1:
@@ -58,9 +72,10 @@
 		j continue2
 		
 	process:
-		la $t3 status
+		la $t3, status
 		sll $t2, $t2, 2
 		add $t3, $t3, $t2
-		lw $t3, ($t3)
-		bne $t3, 0 error_3
+		lw $t3, 0($t3)
+		bne $t3, 0, error_3
 		j continue3
+	
