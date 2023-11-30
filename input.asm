@@ -80,5 +80,5 @@ exitLoop2:
 	# CALL VALIDATE FUNCTION
 	move $a0, $t1
 	move $a1, $v0
-	# jump to something
+	j validateInput
 	
